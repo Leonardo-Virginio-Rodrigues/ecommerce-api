@@ -6,10 +6,81 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../resources/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// User model to store user information
+model User {
+  id        String    @id @default(uuid())
+  name      String    @db.VarChar(255)
+  lastName  String    @db.VarChar(255)
+  email     String    @unique @db.VarChar(255)
+  password  String
+  status    Status    @default(PENDING)
+  role      Role      @default(COMMON)
+  address   Address[]
+  verificationTokens EmailVerificationToken[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+enum Role {
+  COMMON
+  ADMIN
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  PENDING
+  SUSPENDED
+}
+
+//Mail of confirmation model to store email confirmation tokens
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Address model to store user addresses
+  enum AddressType {
+  SHIPPING
+  BILLING
+  OTHER
+}
+
+model Address {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type         AddressType @default(SHIPPING)
+  label        String?     @db.VarChar(50)
+  street       String      @db.VarChar(255)
+  number       String      @db.VarChar(20)
+  complement   String?     @db.VarChar(100)
+  neighborhood String?     @db.VarChar(100)
+  city         String      @db.VarChar(120)
+  state        String      @db.VarChar(2)
+  postalCode   String      @db.VarChar(9)
+  country      String      @default("BR") @db.VarChar(2)
+  latitude     Decimal?    @db.Decimal(9, 6)
+  longitude    Decimal?    @db.Decimal(9, 6)
+  isDefault    Boolean     @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([postalCode])
 }
