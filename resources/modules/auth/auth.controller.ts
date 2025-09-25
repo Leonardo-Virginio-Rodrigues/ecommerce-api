@@ -9,4 +9,10 @@ export class AuthController {
 
     return response.status(201).json(userCreated);
   };
+
+  confirmationAccount = async (request: Request, response: Response) => {
+    await this.authService.confirmationAccount(request);
+
+    return response.status(200).json({ message: "Account confirmed!" });
+  };
 }

@@ -2,7 +2,7 @@ import nodemailer, { Transporter } from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 import hbs from "nodemailer-express-handlebars";
 import path from "path";
-import { env } from "../config/env";
+import { env } from "../../config/env";
 
 const options: SMTPTransport.Options = {
   host: env.smtp.host,

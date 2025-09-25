@@ -14,5 +14,6 @@ const authService = new AuthService(authRepository);
 const authController = new AuthController(authService);
 
 authRouter.post("/signup", validateRequest(signupDto), authController.signup);
+authRouter.get("/confirm/:token", authController.confirmationAccount);
 
 export default authRouter;
