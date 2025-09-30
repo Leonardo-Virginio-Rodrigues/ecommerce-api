@@ -34,6 +34,12 @@ export const ErrorCatalog = {
     statusCode: 409,
     friendlyMessage: "Email already exists",
   },
+
+  //To many requests
+  TOO_MANY_EMAILS: {
+    statusCode: 429,
+    friendlyMessage: "Too many emails sent",
+  },
 } as const;
 
 export type ErrorCatalogKey = keyof typeof ErrorCatalog;

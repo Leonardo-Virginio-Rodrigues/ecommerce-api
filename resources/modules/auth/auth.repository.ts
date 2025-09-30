@@ -39,9 +39,26 @@ export class AuthRepository {
     });
   }
 
-  async deleteVerificationToken(tokenId: string) {
+  //Create Token or Update existing token
+  async upsertVerificationToken(filter: any, data: any) {
+    return this.prismaClient.emailVerificationToken.upsert({
+      where: filter,
+      update: {
+        token: data.token,
+        expiresAt: data.expiresAt,
+        createdAt: new Date(),
+      },
+      create: {
+        userId: filter.userId!, // se usar userId como unique
+        token: data.token,
+        expiresAt: data.expiresAt,
+      },
+    });
+  }
+
+  async deleteVerificationToken(filter: any) {
     return await this.prismaClient.emailVerificationToken.delete({
-      where: { id: tokenId },
+      where: filter,
     });
   }
 

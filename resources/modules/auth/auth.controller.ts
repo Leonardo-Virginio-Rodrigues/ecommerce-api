@@ -22,6 +22,14 @@ export class AuthController {
     return response.status(200).json(newTokens);
   };
 
+  resendConfirmation = async (request: Request, response: Response) => {
+    const resendResponse = await this.authService.resendConfirmation(
+      request.body
+    );
+
+    return response.status(200).json(resendResponse);
+  };
+
   confirmationAccount = async (request: Request, response: Response) => {
     await this.authService.confirmationAccount(request);
 

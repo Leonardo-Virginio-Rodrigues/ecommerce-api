@@ -6,9 +6,10 @@ import { mailer } from "../../providers/mail/mailer";
 import crypto, { randomBytes } from "crypto";
 import { env } from "../../config/env";
 import jwt, { SignOptions } from "jsonwebtoken";
-import { RefreshDto, SigninDto } from "./auth.dto";
+import { RefreshDto, ResendConfirmationDto, SigninDto } from "./auth.dto";
 import { SessionToken, User } from "@prisma/client";
 import { JwtPayload } from "../../common/types/auth";
+import { UserStatus } from "../../common/enums/auth-enum";
 
 export class AuthService {
   constructor(private readonly authRepository: AuthRepository) {}
@@ -20,6 +21,9 @@ export class AuthService {
       email: body.email,
     });
     if (userExists) {
+      if (userExists.status === UserStatus.PENDING) {
+        throw createError("USER_NOT_ACTIVE");
+      }
       throw createError("EMAIL_ALREADY_EXISTS");
     }
 
@@ -27,36 +31,13 @@ export class AuthService {
     body.password = await hashPassword(body.password);
 
     //Set user status to PENDING
-    body.status = "PENDING";
+    body.status = UserStatus.PENDING;
 
     //Create user
     const createdUser = await this.authRepository.create(body);
 
-    //Create verification token
-    const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(
-      Date.now() + env.email.emailTokenExpiration * 1000
-    );
-    await this.authRepository.createVerificationToken({
-      token,
-      userId: createdUser.id,
-      expiresAt,
-    });
-
-    const confirmUrl = `${env.email.confirmationUrl}/${token}`;
-
-    //send confirmation email
-    await mailer.sendMail({
-      from: process.env.MAIL_FROM,
-      to: body.email,
-      subject: "Confirme sua conta",
-      template: "confirm-account",
-      context: {
-        name: body.name,
-        url: confirmUrl,
-        year: new Date().getFullYear(),
-      },
-    } as any);
+    //Create verification token and sending email
+    await this.createConfirmationAndSend(createdUser);
 
     return { message: "User created successfully" };
   }
@@ -135,6 +116,40 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
+  async resendConfirmation(resendConfirmationDto: ResendConfirmationDto) {
+    //Verify if user already exists
+    const userExists = await this.authRepository.findOneUser({
+      email: resendConfirmationDto.email,
+    });
+    if (!userExists) {
+      throw createError("USER_NOT_FOUND");
+    }
+
+    const verificationToken = await this.authRepository.findVerificationToken({
+      userId: userExists.id,
+    });
+
+    // Verify if token has exists and avoids many requests
+    if (verificationToken) {
+      const now = Date.now();
+      const createdAtMs = new Date(verificationToken.createdAt).getTime();
+      console.log(now, createdAtMs, env.email.emailResendCooldownMs);
+      if (now - createdAtMs < env.email.emailResendCooldownMs) {
+        throw createError("TOO_MANY_EMAILS");
+      }
+    }
+
+    //Verify if user is PENDING
+    if (userExists.status !== UserStatus.PENDING) {
+      throw createError("USER_ALREADY_ACTIVE");
+    }
+
+    //Create verification token and sending email
+    await this.createConfirmationAndSend(userExists);
+
+    return { message: "Email sent" };
+  }
+
   async confirmationAccount(request: Request) {
     const { token } = request.params;
 
@@ -170,7 +185,37 @@ export class AuthService {
     return { message: "Account confirmed successfully" };
   }
 
-  //Functios for manage tokens (generate, validate, revoke) can be added here
+  async createConfirmationAndSend(user: User) {
+    //Create verification token
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(
+      Date.now() + env.email.emailTokenExpiration * 1000
+    );
+
+    //Create token or Update token has exists
+    await this.authRepository.upsertVerificationToken(
+      { userId: user.id },
+      {
+        token,
+        expiresAt,
+      }
+    );
+
+    const confirmUrl = `${env.email.confirmationUrl}/${token}`;
+
+    //send confirmation email
+    await mailer.sendMail({
+      from: process.env.MAIL_FROM,
+      to: user.email,
+      subject: "Confirme sua conta",
+      template: "confirm-account",
+      context: {
+        name: user.name,
+        url: confirmUrl,
+        year: new Date().getFullYear(),
+      },
+    } as any);
+  }
 
   async generateAndSaveUserTokens(user: User, signinDto: SigninDto) {
     //Delete user token with equal device ID
@@ -214,5 +259,9 @@ export class AuthService {
 
   generateRefreshToken() {
     return randomBytes(32).toString("base64url");
+  }
+
+  public static verifyAccessToken(accessToken: string) {
+    return jwt.verify(accessToken, env.security.jwtSecret) as JwtPayload;
   }
 }

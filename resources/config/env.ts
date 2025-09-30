@@ -31,5 +31,6 @@ export const env = {
       from: process.env.MAIL_FROM || "no-reply@example.com",
       secure: process.env.MAIL_SECURE === "true",
     },
+    emailResendCooldownMs: Number(process.env.EMAIL_RESEND_COOLDOWN_MS),
   },
 };

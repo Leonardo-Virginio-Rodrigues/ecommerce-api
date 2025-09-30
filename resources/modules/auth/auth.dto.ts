@@ -19,6 +19,9 @@ export const refreshDto = z.object({
   deviceId: z.string(),
 });
 
+export const resendConfirmationDto = z.object({ email: z.string().email() });
+
 export type SigninDto = z.infer<typeof signinDto>;
 export type SignupDto = z.infer<typeof signupDto>;
 export type RefreshDto = z.infer<typeof refreshDto>;
+export type ResendConfirmationDto = z.infer<typeof resendConfirmationDto>;
