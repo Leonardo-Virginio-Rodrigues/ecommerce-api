@@ -5,9 +5,9 @@ import path from "path";
 import { env } from "../../config/env";
 
 const options: SMTPTransport.Options = {
-  host: env.smtp.host,
-  port: Number(env.smtp.port),
-  secure: env.smtp.secure,
+  host: env.email.smtp.host,
+  port: Number(env.email.smtp.port),
+  secure: env.email.smtp.secure,
   auth:
     process.env.MAIL_USER && process.env.MAIL_PASS
       ? { user: process.env.MAIL_USER, pass: process.env.MAIL_PASS }
