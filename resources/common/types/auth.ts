@@ -5,3 +5,11 @@ export type JwtPayload = {
   name: string;
   role: Role;
 };
+
+declare global {
+  namespace Express {
+    interface Request {
+      auth?: JwtPayload;
+    }
+  }
+}
