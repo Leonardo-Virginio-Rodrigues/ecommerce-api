@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { validateRequest } from "../../middlewares/validate-request";
-import { signupDto } from "./auth.dto";
+import { refreshDto, signinDto, signupDto } from "./auth.dto";
 import { AuthService } from "./auth.service";
 import { AuthController } from "./auth.controller";
 import { AuthRepository } from "./auth.repository";
@@ -14,6 +14,12 @@ const authService = new AuthService(authRepository);
 const authController = new AuthController(authService);
 
 authRouter.post("/signup", validateRequest(signupDto), authController.signup);
+authRouter.post("/signin", validateRequest(signinDto), authController.signin);
+authRouter.post(
+  "/refresh",
+  validateRequest(refreshDto),
+  authController.refresh
+);
 authRouter.get("/confirm/:token", authController.confirmationAccount);
 
 export default authRouter;

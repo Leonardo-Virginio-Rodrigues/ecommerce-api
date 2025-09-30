@@ -23,6 +23,7 @@ model User {
   status    Status    @default(PENDING)
   role      Role      @default(COMMON)
   address   Address[]
+  sessions  SessionToken[]
   verificationTokens EmailVerificationToken[]
 
   createdAt DateTime  @default(now())
@@ -83,4 +84,18 @@ model Address {
 
   @@index([userId])
   @@index([postalCode])
+}
+
+// User sessions
+model SessionToken {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  deviceId     String            // identificador lógico do device/sessão
+  refreshToken  String   @unique
+  expiresAt    DateTime
+
+  createdAt    DateTime @default(now())
+  ip           String?
 }

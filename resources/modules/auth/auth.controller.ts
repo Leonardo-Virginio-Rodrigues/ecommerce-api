@@ -10,6 +10,18 @@ export class AuthController {
     return response.status(201).json(userCreated);
   };
 
+  signin = async (request: Request, response: Response) => {
+    const userTokens = await this.authService.signin(request.body);
+
+    return response.status(200).json(userTokens);
+  };
+
+  refresh = async (request: Request, response: Response) => {
+    const newTokens = await this.authService.refresh(request.body);
+
+    return response.status(200).json(newTokens);
+  };
+
   confirmationAccount = async (request: Request, response: Response) => {
     await this.authService.confirmationAccount(request);
 
